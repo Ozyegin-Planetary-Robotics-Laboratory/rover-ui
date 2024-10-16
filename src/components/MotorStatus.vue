@@ -23,12 +23,13 @@
             <p class="value">{{ rpm.toString().padStart(3, '0') }}</p>
           </div>
           <div class="data-row">
-            <p>Voltage/Current</p>
-            <p class="value">{{ voltageCurrent.toString().padStart(3, '0') }}</p>
+            <p>Voltage/Current:</p>
+            <p class="value">{{voltage.toString().padStart(3, '0')}} / {{current.toString().padStart(3, '0')}}</p>
           </div>
+          
         </div>
         <div class="graph-placeholders">
-            <p>Grapsh will be implemented</p>
+            <p>Graphs will be implemented</p>
         </div>
       </div>
     </div>
@@ -43,7 +44,8 @@
     temperature: Number,
     maxTemperature: Number,
     rpm: Number,
-    voltageCurrent: Number,
+    voltage: Number,
+    current: Number
   });
   </script>
   
