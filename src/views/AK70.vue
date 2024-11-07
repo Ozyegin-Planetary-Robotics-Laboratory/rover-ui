@@ -10,6 +10,7 @@
         :rpm="motorData.leftFront.rpm"
         :voltage="motorData.leftFront.voltage"
         :current="motorData.leftFront.current"
+        :temperatureHistory="motorTempHist.leftFront.value"
       />
       <MotorStatus 
         title="Right Front"
@@ -19,6 +20,7 @@
         :rpm="motorData.rightFront.rpm"
         :voltage="motorData.rightFront.voltage"
         :current="motorData.rightFront.current"
+        :temperatureHistory="motorTempHist.rightFront.value"
       />
       <MotorStatus 
         title="Left Rear"
@@ -28,6 +30,7 @@
         :rpm="motorData.leftRear.rpm"
         :voltage="motorData.leftRear.voltage"
         :current="motorData.leftRear.current"
+        :temperatureHistory="motorTempHist.leftRear.value"
       />
       <MotorStatus 
         title="Right Rear"
@@ -37,6 +40,7 @@
         :rpm="motorData.rightRear.rpm"
         :voltage="motorData.rightRear.voltage"
         :current="motorData.rightRear.current"
+        :temperatureHistory="motorTempHist.rightRear.value"
       />
     </div>
   </div>
@@ -48,11 +52,30 @@ import Header from '../components/Header.vue';
 import MotorStatus from '../components/MotorStatus.vue';
 
 const motorData = ref({
-  leftFront: { id: 12, temperature: 0, maxTemperature: 100, rpm: 0, voltage: 0, current: 0  },
-  rightFront: { id: 13, temperature: 0, maxTemperature: 100, rpm: 0,  voltage: 0, current: 0 },
-  leftRear: { id: 14, temperature: 0, maxTemperature: 100, rpm: 0,  voltage: 0, current: 0  },
-  rightRear: { id: 15, temperature: 0, maxTemperature: 100, rpm: 0,  voltage: 0, current: 0  },
+  leftFront: { id: 12, temperature: 0, maxTemperature: 0, rpm: 0, voltage: 0, current: 0  },
+  rightFront: { id: 13, temperature: 0, maxTemperature: 0, rpm: 0,  voltage: 0, current: 0 },
+  leftRear: { id: 14, temperature: 0, maxTemperature: 0, rpm: 0,  voltage: 0, current: 0  },
+  rightRear: { id: 15, temperature: 0, maxTemperature: 0, rpm: 0,  voltage: 0, current: 0  },
 });
+
+
+
+const motorTempHist = {
+  leftFront: ref([]),
+  rightFront: ref([]),
+  leftRear: ref([]),
+  rightRear: ref([]),
+};
+
+
+const addTemperatureDataPoint = (motorKey, temperature) => {
+  const maxLength = 100;
+  if (motorTempHist[motorKey].value.length >= maxLength) {
+    motorTempHist[motorKey].value.shift();
+  }
+  motorTempHist[motorKey].value.push(temperature);
+};
+
 
 const updateMotorData = (data) => {
   if (data.motor_id) {
@@ -64,10 +87,16 @@ const updateMotorData = (data) => {
     }[data.motor_id];
 
     if (motorKey) {
+      const currentMotor = motorData.value[motorKey];
+      const newTemperature = Number(data.temperature) || 0;
+      addTemperatureDataPoint(motorKey, newTemperature);
+
+      const newMaxTemperature = newTemperature > currentMotor.maxTemperature ? newTemperature : currentMotor.maxTemperature;
+
       motorData.value[motorKey] = {
         id: data.motor_id,
-        temperature: Number(data.temperature) || 0,
-        maxTemperature: 100,
+        temperature: newTemperature,
+        maxTemperature: newMaxTemperature,  // Update the maxTemperature if necessary
         rpm: Number(data.rpm) || 0,
         voltage: Number(data.voltage) || 0,
         current: Number(data.current) || 0,
@@ -76,9 +105,9 @@ const updateMotorData = (data) => {
   }
 };
 
+
 onMounted(() => {
   const eventSource = new EventSource('http://localhost:9090/events');
-
   eventSource.onmessage = (event) => {
     try {
         const sanitizedData = event.data.replace(/'/g, '"');
@@ -87,12 +116,13 @@ onMounted(() => {
     } catch (error) {
         console.error('JSON parsing error:', error);
     }
-};
-
+  };
 
   eventSource.onerror = () => {
     console.error('EventSource failed.');
   };
+
+
 });
 
 onBeforeUnmount(() => {
